@@ -221,6 +221,14 @@
           )
           return
         }
+        // If this navigation controller is presenting another view controller,
+        // dismiss the presented one as part of the navigation dismissal.
+        if navigationController.presentedViewController != nil {
+          navigationController.presentedViewController?._UIKitNavigation_onDismiss = nil
+          navigationController.dismiss(
+            animated: !transaction.uiKit.disablesAnimations
+          )
+        }
         navigationController.popFromViewController(
           child, animated: !transaction.uiKit.disablesAnimations
         )
