@@ -284,6 +284,46 @@ final class PresentationTests: XCTestCase {
   }
 
   @MainActor
+  func testPushViewController_ChangePushedScreen() async throws {
+    let vc = BasicViewController(
+      model: Model(pushedChild: Model(pushedChild: Model()))
+    )
+    let nav = UINavigationController(rootViewController: vc)
+    try await setUp(controller: nav)
+
+    await assertEventuallyEqual(nav.viewControllers.count, 3)
+
+    let replacePushModel = Model()
+    withUITransaction(\.uiKit.disablesAnimations, true) {
+      vc.model.pushedChild = replacePushModel
+    }
+
+    await assertEventuallyEqual(nav.viewControllers.count, 2)
+    await assertEventuallyNotNil(vc.model.pushedChild)
+    XCTAssertEqual(vc.model.pushedChild?.id, replacePushModel.id)
+    await assertEventuallyNil(nav.presentedViewController)
+  }
+
+  @MainActor
+  func testPushViewController_PushScreenWhenOtherIsPresented() async throws {
+    let vc = BasicViewController(
+      model: Model(pushedChild: Model(presentedChild: Model()))
+    )
+    let nav = UINavigationController(rootViewController: vc)
+    try await setUp(controller: nav)
+
+    await assertEventuallyEqual(nav.viewControllers.count, 2)
+    await assertEventuallyNotNil(nav.presentedViewController)
+
+    withUITransaction(\.uiKit.disablesAnimations, true) {
+      vc.model.pushedChild = Model()
+    }
+
+    await assertEventuallyNotNil(vc.model.pushedChild)
+    await assertEventuallyNil(nav.presentedViewController)
+  }
+
+  @MainActor
   func testPushViewController_ManualPop() async throws {
     // TODO: This test works in 18.2 but fails in 18.4+. Investigate.
     if #available(iOS 18.4, *) { return }

@@ -207,9 +207,32 @@
           )
           return
         }
-        navigationController.pushViewController(
-          child, animated: !transaction.uiKit.disablesAnimations
-        )
+        if navigationController.presentedViewController != nil {
+          navigationController.presentedViewController?._UIKitNavigation_onDismiss = nil
+          navigationController.dismiss(
+            animated: !transaction.uiKit.disablesAnimations
+          )
+        }
+        if
+          let self,
+          let currentViewController = navigationController.viewControllers.last,
+          navigationController.viewControllers.last != self
+        {
+          currentViewController._UIKitNavigation_onDismiss = {
+            navigationController.pushViewController(
+              child, animated: !transaction.uiKit.disablesAnimations
+            )
+          }
+
+          navigationController.popToViewController(
+            self, animated: !transaction.uiKit.disablesAnimations
+          )
+        } else {
+          navigationController.pushViewController(
+            child, animated: !transaction.uiKit.disablesAnimations
+          )
+        }
+
       } dismiss: { [weak self] child, transaction in
         guard
           let navigationController = self?.navigationController ?? self as? UINavigationController
@@ -351,9 +374,9 @@
         guard let self else { return }
         if let unwrappedItem = UIBinding(item) {
           if let presented = presentedByID[key] {
-            guard let presentationID = presented.presentationID,
-              presentationID != id(unwrappedItem.wrappedValue)
-            else {
+            if let presentationID = presented.presentationID,
+               presentationID == id(unwrappedItem.wrappedValue)
+            {
               return
             }
           }
