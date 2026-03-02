@@ -284,6 +284,77 @@ final class PresentationTests: XCTestCase {
   }
 
   @MainActor
+  func testPushViewController_DismissPushedAndPresentedScreens() async throws {
+    let vc = BasicViewController(
+      model: Model(pushedChild: Model(presentedChild: Model()))
+    )
+    let nav = UINavigationController(rootViewController: vc)
+    try await setUp(controller: nav)
+
+    await assertEventuallyEqual(nav.viewControllers.count, 2)
+    await assertEventuallyNotNil(nav.presentedViewController)
+
+    withUITransaction(\.uiKit.disablesAnimations, true) {
+      nav.viewControllers[1].traitCollection.dismiss()
+    }
+    await assertEventuallyNil(vc.model.pushedChild)
+    await assertEventuallyNil(nav.presentedViewController)
+  }
+
+  @MainActor
+  func testPushViewController_DismissMultiplePushedAndPresentedScreens() async throws {
+    let vc = BasicViewController(
+      model: Model(pushedChild: Model(pushedChild: Model(presentedChild: Model(presentedChild: Model()))))
+    )
+    let nav = UINavigationController(rootViewController: vc)
+    try await setUp(controller: nav)
+
+    await assertEventuallyEqual(nav.viewControllers.count, 3)
+    await assertEventuallyNotNil(nav.presentedViewController)
+
+    withUITransaction(\.uiKit.disablesAnimations, true) {
+      nav.viewControllers[1].traitCollection.dismiss()
+    }
+    await assertEventuallyNil(vc.model.pushedChild)
+    await assertEventuallyNil(nav.presentedViewController)
+  }
+
+  @MainActor
+  func testPushViewController_DismissMultiplePushedAndPresentedScreensWithPopToRoot() async throws {
+    let vc = BasicViewController(
+      model: Model(pushedChild: Model(presentedChild: Model()))
+    )
+    let nav = UINavigationController(rootViewController: vc)
+    try await setUp(controller: nav)
+
+    await assertEventuallyEqual(nav.viewControllers.count, 2)
+    await assertEventuallyNotNil(nav.presentedViewController)
+
+    nav.popToRootViewController(animated: false)
+    try await Task.sleep(for: .seconds(0.5))
+    await assertEventuallyNil(vc.model.pushedChild)
+    await assertEventuallyNil(nav.presentedViewController)
+  }
+
+  @MainActor
+  func testPushViewController_DismissMultiplePushedAndPresentedScreensWithSettingState() async throws {
+    let vc = BasicViewController(
+      model: Model(pushedChild: Model(presentedChild: Model()))
+    )
+    let nav = UINavigationController(rootViewController: vc)
+    try await setUp(controller: nav)
+
+    await assertEventuallyEqual(nav.viewControllers.count, 2)
+    await assertEventuallyNotNil(nav.presentedViewController)
+
+    withUITransaction(\.uiKit.disablesAnimations, true) {
+      vc.model.pushedChild = nil
+    }
+    await assertEventuallyNil(vc.model.pushedChild)
+    await assertEventuallyNil(nav.presentedViewController)
+  }
+
+  @MainActor
   func testPushViewController_ManualPop() async throws {
     // TODO: This test works in 18.2 but fails in 18.4+. Investigate.
     if #available(iOS 18.4, *) { return }
