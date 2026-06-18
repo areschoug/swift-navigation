@@ -1,7 +1,7 @@
 #if canImport(UIKit) && !os(watchOS)
   import IssueReporting
-  @_spi(Internals) import SwiftNavigation
-  import UIKit
+  @_spi(Internals) public import SwiftNavigation
+  public import UIKit
   @_implementationOnly import UIKitNavigationShim
 
   extension UIViewController {
@@ -121,12 +121,20 @@
         content($item)
       } present: { [weak self] child, transaction in
         guard let self else { return }
-        if presentedViewController != nil {
-          self.dismiss(
-            animated: !transaction.uiKit.disablesAnimations
-          ) {
-            onDismiss?()
-            self.present(child, animated: !transaction.uiKit.disablesAnimations)
+        if let presentedViewController {
+          if presentedViewController.isBeingDismissed {
+            let oldViewControllerOnDismiss = presentedViewController._UIKitNavigation_onDismiss
+            presentedViewController._UIKitNavigation_onDismiss = {
+              oldViewControllerOnDismiss?()
+              self.present(child, animated: !transaction.uiKit.disablesAnimations)
+            }
+          } else {
+            self.dismiss(
+              animated: !transaction.uiKit.disablesAnimations
+            ) {
+              onDismiss?()
+              self.present(child, animated: !transaction.uiKit.disablesAnimations)
+            }
           }
         } else {
           self.present(child, animated: !transaction.uiKit.disablesAnimations)

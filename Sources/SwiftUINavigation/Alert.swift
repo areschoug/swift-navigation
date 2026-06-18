@@ -1,6 +1,7 @@
 #if canImport(SwiftUI)
   import IssueReporting
-  import SwiftUI
+  public import SwiftNavigation
+  public import SwiftUI
 
   @available(iOS 15, macOS 12, tvOS 15, watchOS 8, *)
   extension View {
@@ -235,6 +236,22 @@
     ///
     /// See <doc:AlertsDialogs> for more information on how to use this API.
     ///
+    /// - Parameter state: A binding to optional alert state that determines whether an alert should
+    ///   be presented. When the binding is updated with non-`nil` value, it is unwrapped and used
+    ///   to populate the fields of an alert that the system displays to the user. When the user
+    ///   presses or taps one of the alert's actions, the system sets this value to `nil` and
+    ///   dismisses the alert, and the action is fed to the `action` closure.
+    #if compiler(>=6)
+      @MainActor
+    #endif
+    public func alert(_ state: Binding<AlertState<Never>?>) -> some View {
+      alert(state) { _ in }
+    }
+
+    /// Presents an alert from a binding to optional alert state.
+    ///
+    /// See <doc:AlertsDialogs> for more information on how to use this API.
+    ///
     /// - Parameters:
     ///   - state: A binding to optional alert state that determines whether an alert should be
     ///     presented. When the binding is updated with non-`nil` value, it is unwrapped and used to
@@ -248,7 +265,7 @@
     #endif
     public func alert<Value>(
       _ state: Binding<AlertState<Value>?>,
-      action handler: @escaping (Value?) -> Void = { (_: Never?) in }
+      action handler: @escaping (Value?) -> Void
     ) -> some View {
       alert(item: state) {
         Text($0.title)
@@ -278,7 +295,7 @@
     ///     tapped.
     public func alert<Value: Sendable>(
       _ state: Binding<AlertState<Value>?>,
-      action handler: @escaping @Sendable (Value?) async -> Void = { (_: Never?) async in }
+      action handler: @escaping @Sendable (Value?) async -> Void
     ) -> some View {
       alert(item: state) {
         Text($0.title)
@@ -293,16 +310,28 @@
   }
 
   @available(
-    iOS, introduced: 13, deprecated: 100000, message: "use 'View.alert(_:action:)' instead."
+    iOS,
+    introduced: 13,
+    deprecated: 100000,
+    message: "use 'View.alert(_:action:)' instead."
   )
   @available(
-    macOS, introduced: 10.15, deprecated: 100000, message: "use 'View.alert(_:action:)' instead."
+    macOS,
+    introduced: 10.15,
+    deprecated: 100000,
+    message: "use 'View.alert(_:action:)' instead."
   )
   @available(
-    tvOS, introduced: 13, deprecated: 100000, message: "use 'View.alert(_:action:)' instead."
+    tvOS,
+    introduced: 13,
+    deprecated: 100000,
+    message: "use 'View.alert(_:action:)' instead."
   )
   @available(
-    watchOS, introduced: 6, deprecated: 100000, message: "use 'View.alert(_:action:)' instead."
+    watchOS,
+    introduced: 6,
+    deprecated: 100000,
+    message: "use 'View.alert(_:action:)' instead."
   )
   extension Alert {
     /// Creates an alert from alert state.
@@ -368,4 +397,4 @@
       }
     }
   }
-#endif  // canImport(SwiftUI)
+#endif
